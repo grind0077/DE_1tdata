@@ -1,25 +1,8 @@
--- Создадим сводную таблицу объеденяющую таблицы "products", "plan", "shop_dns", "shop_mvideo" и "shop_sitilink"
-CREATE TABLE full_table AS
-    SELECT shop_name, 
-           product_id, 
-           product_name, 
-           price, 
-           plan_date, 
-           plan_cnt, 
-           sales_cnt, 
-           date 
-    FROM products
-        INNER JOIN plan 
-            ON products.product_id = plan.product_id
-        INNER JOIN shop_dns
-            ON products.product_id = shop_dns.product_id
-        INNER JOIN shop_mvideo
-            ON products.product_id = shop_mvideo.product_id
-        INNER JOIN shop_sitilink
-            ON products.product_id = shop_sitilink.product_id;
+with fact_sales as (SELECT 1 AS shop_id, 'dns' as shop_name, * FROM shop_dns
+UNION SELECT 2 AS shop_id, 'mvideo' as shop_name, * FROM shop_mvideo
+UNION SELECT 3 AS shop_id, 'sitilink' as shop_name, * FROM shop_sitilink)
 
---Далее выведем требуемые метрики
-SELECT shop_name,
+select shop_name,
        product_name, 
        sales_cnt AS sales_fact, 
        plan_cnt AS sales_plan, 
@@ -27,5 +10,9 @@ SELECT shop_name,
        (sales_cnt * price) AS income_fact, 
        (plan_cnt * price) AS income_plan, 
        (income_fact/income_plan) AS income_ratio
-FROM full_table
+from PLAN  p
+ left join fact_sales f
+    on p.product_id = f.product_id
+ join products prod
+    on p.product_id = prod.product_id
 GROUP BY shop_name;
